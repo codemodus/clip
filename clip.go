@@ -1,20 +1,7 @@
 package clip
 
 import (
-	"errors"
 	"flag"
-	"os"
-)
-
-var (
-	// ErrFlagParse ...
-	ErrFlagParse = errors.New("failed to parse flags")
-
-	// ErrBadCommand ...
-	ErrBadCommand = errors.New("cannot find command")
-
-	// FlagErrorHandling ...
-	FlagErrorHandling = flag.ContinueOnError
 )
 
 // Clip ...
@@ -26,31 +13,47 @@ type Clip struct {
 
 // New ...
 func New(flags *flag.FlagSet, cmds *CommandSet) *Clip {
-	return &Clip{fs: flags, cs: cmds}
+	return &Clip{
+		fs: flags,
+		cs: cmds,
+	}
 }
 
 // Parse ...
-func (c *Clip) Parse(flags []string) error {
-	if len(flags) <= 1 {
+func (c *Clip) Parse(args []string) error {
+	if args == nil || len(args) <= 1 {
 		return nil
 	}
 
-	if err := c.fs.Parse(flags[1:]); err != nil {
-		return ErrFlagParse
+	nextArgs := args
+
+	if c.fs != nil {
+		if err := c.fs.Parse(args[1:]); err != nil {
+			return ErrFlagParse
+		}
+
+		nextArgs = c.fs.Args()
+		if len(nextArgs) == 0 {
+			return nil
+		}
+
+		if c.cs == nil {
+			return ErrBadCommand
+		}
+
+		c.cs.cur = c.fs.Arg(0)
+
+		if c.cs.cur == "" {
+			return ErrEmptyCommand
+		}
 	}
 
-	if len(c.fs.Args()) == 0 {
-		return nil
-	}
-
-	c.cs.cc = c.fs.Arg(0)
-
-	cc, ok := c.cs.cs[c.cs.cc]
+	cc, ok := c.cs.m[c.cs.cur]
 	if !ok {
 		return ErrBadCommand
 	}
 
-	return cc.Parse(nextArgs(os.Args, c.cs.cc))
+	return cc.Parse(nextArgs)
 }
 
 // Run ...
@@ -61,16 +64,20 @@ func (c *Clip) Run() error {
 		}
 	}
 
-	if c.cs == nil || len(c.cs.cs) == 0 {
+	if c.cs == nil || len(c.cs.m) == 0 {
 		// TODO: check if required, parse user input if needed, then run
 		return nil
 	}
 
-	next, ok := c.cs.cs[c.cs.cc]
-	if !ok {
-		// TODO: this probably can't happen, verify and tighten accordingly
-		return nil
+	if c.cs.cur == "" {
+		return ErrEmptyCommand
 	}
+
+	next, ok := c.cs.m[c.cs.cur]
+	if !ok {
+		return ErrBadCommand
+	}
+
 	return next.Run()
 }
 
@@ -79,32 +86,32 @@ type Command = Clip
 
 // NewCommand ...
 func NewCommand(flags *flag.FlagSet, fn func() error, cmds *CommandSet) *Command {
-	return &Command{fs: flags, fn: fn, cs: cmds}
+	return &Command{
+		fs: flags,
+		fn: fn,
+		cs: cmds,
+	}
 }
 
 // CommandSet ...
 type CommandSet struct {
 	req bool
-	cc  string
-	cs  map[string]*Command
+	cur string
+	m   map[string]*Command
 }
 
 // NewCommandSet ...
 func NewCommandSet(required bool, cmds ...*Command) *CommandSet {
-	cs := make(map[string]*Command)
+	m := make(map[string]*Command)
+
 	for _, c := range cmds {
-		cs[c.fs.Name()] = c
-	}
-
-	return &CommandSet{req: required, cs: cs}
-}
-
-func nextArgs(vals []string, val string) []string {
-	for k, v := range vals {
-		if v == val {
-			return vals[k:]
+		if c.fs != nil && c.fs.Name() != "" {
+			m[c.fs.Name()] = c
 		}
 	}
 
-	return vals
+	return &CommandSet{
+		req: required,
+		m:   m,
+	}
 }
