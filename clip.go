@@ -56,16 +56,14 @@ func NewCommand(flags *flag.FlagSet, fn CommandFunc, subCmds *CommandSet) *Comma
 
 // CommandSet ...
 type CommandSet struct {
-	req bool
 	cur string
 	m   map[string]*Command
 }
 
 // NewCommandSet ...
-func NewCommandSet(required bool, cmds ...*Command) *CommandSet {
+func NewCommandSet(cmds ...*Command) *CommandSet {
 	return &CommandSet{
-		req: required,
-		m:   cmdsTable(cmds),
+		m: cmdsTable(cmds),
 	}
 }
 
@@ -129,7 +127,6 @@ func run(c *Clip) (*Clip, error) {
 	}
 
 	if c.cs == nil || len(c.cs.m) == 0 {
-		// TODO: check if required, parse user input if needed, then run
 		return nil, errWarnNoCmds
 	}
 

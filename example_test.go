@@ -15,7 +15,7 @@ func Example() {
 		otherCnf  = newOtherConf("other")
 	)
 
-	cs := clip.NewCommandSet(true,
+	cs := clip.NewCommandSet(
 		clip.NewCommand(printCnf.flagSet, runPrintFunc(printCnf, globalCnf), nil),
 		clip.NewCommand(otherCnf.flagSet, runOtherFunc(otherCnf), nil),
 	)
