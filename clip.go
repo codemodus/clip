@@ -83,7 +83,7 @@ func cmdsTable(cmds []*Command) map[string]*Command {
 	return m
 }
 
-func parse(c *Clip, args []string) (*Command, []string, error) {
+func parse(c *Command, args []string) (*Command, []string, error) {
 	if args == nil || len(args) <= 1 {
 		return nil, nil, errWarnNoArgs
 	}
@@ -119,7 +119,7 @@ func parse(c *Clip, args []string) (*Command, []string, error) {
 	return nextCmd, nextArgs, nil
 }
 
-func run(c *Clip) (*Clip, error) {
+func run(c *Command) (*Command, error) {
 	if c.fn != nil {
 		if err := c.fn(); err != nil {
 			return nil, err
