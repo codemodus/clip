@@ -23,11 +23,7 @@ func New(flags *flag.FlagSet, cmds *CommandSet) *Clip {
 func (c *Clip) Parse(args []string) error {
 	next, args, err := parse(c, args)
 	if err != nil {
-		if err == errWarnNoArgs {
-			return nil
-		}
-
-		return err
+		return nilWarnOrError(err)
 	}
 
 	return next.Parse(args)
@@ -37,11 +33,7 @@ func (c *Clip) Parse(args []string) error {
 func (c *Clip) Run() error {
 	next, err := run(c)
 	if err != nil {
-		if err == errWarnNoCmds {
-			return nil
-		}
-
-		return err
+		return nilWarnOrError(err)
 	}
 
 	return next.Run()

@@ -23,3 +23,11 @@ var (
 	errWarnNoArgs = errors.New("no more args")
 	errWarnNoCmds = errors.New("no more cmds")
 )
+
+func nilWarnOrError(err error) error {
+	if err == errWarnNoArgs || err == errWarnNoCmds {
+		return nil
+	}
+
+	return err
+}
