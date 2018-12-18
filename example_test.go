@@ -36,9 +36,9 @@ func Example() {
 	// hello, world (global verbosity is enabled)
 }
 
-func ExampleCommandFunc() {
-	var runPrint clip.CommandFunc
-	var runAdvPrint clip.CommandFunc
+func ExampleHandlerFunc() {
+	var runPrint clip.HandlerFunc
+	var runAdvPrint clip.HandlerFunc
 
 	runPrint = func() error {
 		_, err := fmt.Println("hello, example")
