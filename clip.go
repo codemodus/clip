@@ -54,6 +54,18 @@ func NewCommand(flags *flag.FlagSet, fn HandlerFunc, subCmds *CommandSet) *Comma
 	}
 }
 
+// Namespace ...
+type Namespace = Clip
+
+// NewNamespace ...
+func NewNamespace(name string, subCmds *CommandSet) *Namespace {
+	return &Namespace{
+		fs: flag.NewFlagSet(name, FlagErrorHandling),
+		fn: nil,
+		cs: subCmds,
+	}
+}
+
 // CommandSet ...
 type CommandSet struct {
 	cur string
