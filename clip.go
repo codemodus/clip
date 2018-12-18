@@ -12,10 +12,10 @@ type Clip struct {
 }
 
 // New ...
-func New(flags *flag.FlagSet, cmds *CommandSet) *Clip {
+func New(flags *flag.FlagSet, subCmds *CommandSet) *Clip {
 	return &Clip{
 		fs: flags,
-		cs: cmds,
+		cs: subCmds,
 	}
 }
 
@@ -43,11 +43,11 @@ func (c *Clip) Run() error {
 type Command = Clip
 
 // NewCommand ...
-func NewCommand(flags *flag.FlagSet, fn func() error, cmds *CommandSet) *Command {
+func NewCommand(flags *flag.FlagSet, fn func() error, subCmds *CommandSet) *Command {
 	return &Command{
 		fs: flags,
 		fn: fn,
-		cs: cmds,
+		cs: subCmds,
 	}
 }
 
