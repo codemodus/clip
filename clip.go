@@ -39,11 +39,14 @@ func (c *Clip) Run() error {
 	return next.Run()
 }
 
+// CommandFunc ...
+type CommandFunc func() error
+
 // Command ...
 type Command = Clip
 
 // NewCommand ...
-func NewCommand(flags *flag.FlagSet, fn func() error, subCmds *CommandSet) *Command {
+func NewCommand(flags *flag.FlagSet, fn CommandFunc, subCmds *CommandSet) *Command {
 	return &Command{
 		fs: flags,
 		fn: fn,
