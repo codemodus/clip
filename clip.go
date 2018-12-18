@@ -101,11 +101,14 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 		}
 
 		if c.cs == nil {
+			if len(nextArgs) == 1 {
+				return nil, nil, errWarnNoCmds
+			}
+
 			return nil, nil, ErrBadCommand
 		}
 
 		c.cs.cur = c.fs.Arg(0)
-
 		if c.cs.cur == "" {
 			return nil, nil, ErrEmptyCommand
 		}
