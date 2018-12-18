@@ -33,6 +33,55 @@ func (c *Clip) Parse(args []string) error {
 	return next.Parse(args)
 }
 
+// Run ...
+func (c *Clip) Run() error {
+	next, err := run(c)
+	if err != nil {
+		if err == errWarnNoCmds {
+			return nil
+		}
+
+		return err
+	}
+
+	return next.Run()
+}
+
+// Command ...
+type Command = Clip
+
+// NewCommand ...
+func NewCommand(flags *flag.FlagSet, fn func() error, cmds *CommandSet) *Command {
+	return &Command{
+		fs: flags,
+		fn: fn,
+		cs: cmds,
+	}
+}
+
+// CommandSet ...
+type CommandSet struct {
+	req bool
+	cur string
+	m   map[string]*Command
+}
+
+// NewCommandSet ...
+func NewCommandSet(required bool, cmds ...*Command) *CommandSet {
+	m := make(map[string]*Command)
+
+	for _, c := range cmds {
+		if c.fs != nil && c.fs.Name() != "" {
+			m[c.fs.Name()] = c
+		}
+	}
+
+	return &CommandSet{
+		req: required,
+		m:   m,
+	}
+}
+
 func parse(c *Clip, args []string) (*Command, []string, error) {
 	if args == nil || len(args) <= 1 {
 		return nil, nil, errWarnNoArgs
@@ -69,20 +118,6 @@ func parse(c *Clip, args []string) (*Command, []string, error) {
 	return nextCmd, nextArgs, nil
 }
 
-// Run ...
-func (c *Clip) Run() error {
-	next, err := run(c)
-	if err != nil {
-		if err == errWarnNoCmds {
-			return nil
-		}
-
-		return err
-	}
-
-	return next.Run()
-}
-
 func run(c *Clip) (*Clip, error) {
 	if c.fn != nil {
 		if err := c.fn(); err != nil {
@@ -105,39 +140,4 @@ func run(c *Clip) (*Clip, error) {
 	}
 
 	return next, nil
-}
-
-// Command ...
-type Command = Clip
-
-// NewCommand ...
-func NewCommand(flags *flag.FlagSet, fn func() error, cmds *CommandSet) *Command {
-	return &Command{
-		fs: flags,
-		fn: fn,
-		cs: cmds,
-	}
-}
-
-// CommandSet ...
-type CommandSet struct {
-	req bool
-	cur string
-	m   map[string]*Command
-}
-
-// NewCommandSet ...
-func NewCommandSet(required bool, cmds ...*Command) *CommandSet {
-	m := make(map[string]*Command)
-
-	for _, c := range cmds {
-		if c.fs != nil && c.fs.Name() != "" {
-			m[c.fs.Name()] = c
-		}
-	}
-
-	return &CommandSet{
-		req: required,
-		m:   m,
-	}
 }
