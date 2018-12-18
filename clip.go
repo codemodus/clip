@@ -21,64 +21,90 @@ func New(flags *flag.FlagSet, cmds *CommandSet) *Clip {
 
 // Parse ...
 func (c *Clip) Parse(args []string) error {
+	next, args, err := parse(c, args)
+	if err != nil {
+		if err == errWarnNoArgs {
+			return nil
+		}
+
+		return err
+	}
+
+	return next.Parse(args)
+}
+
+func parse(c *Clip, args []string) (*Command, []string, error) {
 	if args == nil || len(args) <= 1 {
-		return nil
+		return nil, nil, errWarnNoArgs
 	}
 
 	nextArgs := args
 
 	if c.fs != nil {
 		if err := c.fs.Parse(args[1:]); err != nil {
-			return ErrFlagParse
+			return nil, nil, ErrFlagParse
 		}
 
 		nextArgs = c.fs.Args()
 		if len(nextArgs) == 0 {
-			return nil
+			return nil, nil, errWarnNoArgs
 		}
 
 		if c.cs == nil {
-			return ErrBadCommand
+			return nil, nil, ErrBadCommand
 		}
 
 		c.cs.cur = c.fs.Arg(0)
 
 		if c.cs.cur == "" {
-			return ErrEmptyCommand
+			return nil, nil, ErrEmptyCommand
 		}
 	}
 
-	cc, ok := c.cs.m[c.cs.cur]
+	nextCmd, ok := c.cs.m[c.cs.cur]
 	if !ok {
-		return ErrBadCommand
+		return nil, nil, ErrBadCommand
 	}
 
-	return cc.Parse(nextArgs)
+	return nextCmd, nextArgs, nil
 }
 
 // Run ...
 func (c *Clip) Run() error {
+	next, err := run(c)
+	if err != nil {
+		if err == errWarnNoCmds {
+			return nil
+		}
+
+		return err
+	}
+
+	return next.Run()
+}
+
+func run(c *Clip) (*Clip, error) {
 	if c.fn != nil {
 		if err := c.fn(); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	if c.cs == nil || len(c.cs.m) == 0 {
 		// TODO: check if required, parse user input if needed, then run
-		return nil
+		return nil, errWarnNoCmds
 	}
 
 	if c.cs.cur == "" {
-		return ErrEmptyCommand
+		return nil, ErrEmptyCommand
 	}
 
 	next, ok := c.cs.m[c.cs.cur]
 	if !ok {
-		return ErrBadCommand
+		return nil, ErrBadCommand
 	}
 
-	return next.Run()
+	return next, nil
 }
 
 // Command ...

@@ -18,3 +18,8 @@ var (
 	// FlagErrorHandling ...
 	FlagErrorHandling = flag.ContinueOnError
 )
+
+var (
+	errWarnNoArgs = errors.New("no more args")
+	errWarnNoCmds = errors.New("no more cmds")
+)
