@@ -60,7 +60,18 @@ type CommandSet struct {
 
 // NewCommandSet ...
 func NewCommandSet(required bool, cmds ...*Command) *CommandSet {
+	return &CommandSet{
+		req: required,
+		m:   cmdsTable(cmds),
+	}
+}
+
+func cmdsTable(cmds []*Command) map[string]*Command {
 	m := make(map[string]*Command)
+
+	if cmds == nil {
+		return m
+	}
 
 	for _, c := range cmds {
 		if c.fs != nil && c.fs.Name() != "" {
@@ -68,10 +79,7 @@ func NewCommandSet(required bool, cmds ...*Command) *CommandSet {
 		}
 	}
 
-	return &CommandSet{
-		req: required,
-		m:   m,
-	}
+	return m
 }
 
 func parse(c *Clip, args []string) (*Command, []string, error) {
