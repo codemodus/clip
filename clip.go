@@ -118,7 +118,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 
 	if args == nil || len(args) <= 1 {
 		if c.fn == nil {
-			return nil, nil, &clipr.EmptyCommandError{scp}
+			return nil, nil, clipr.NewEmptyCommandError(scp)
 		}
 
 		return nil, nil, clipr.ErrCtrlNoArgs
@@ -131,7 +131,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 			if clipr.IsFlagHelpError(err) {
 				c.no = true
 			}
-			return nil, nil, &clipr.FlagParseError{scp, err}
+			return nil, nil, clipr.NewFlagParseError(scp, err)
 		}
 
 		nextArgs = c.fs.Args()
@@ -144,18 +144,18 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 				return nil, nil, clipr.ErrCtrlNoCmds
 			}
 
-			return nil, nil, &clipr.BadCommandError{scp, c.fs.Arg(0)}
+			return nil, nil, clipr.NewBadCommandError(scp, c.fs.Arg(0))
 		}
 
 		c.cs.cur = c.fs.Arg(0)
 		if c.cs.cur == "" {
-			return nil, nil, &clipr.EmptyCommandError{scp}
+			return nil, nil, clipr.NewEmptyCommandError(scp)
 		}
 	}
 
 	nextCmd, ok := c.cs.m[c.cs.cur]
 	if !ok {
-		return nil, nil, &clipr.BadCommandError{scp, c.cs.cur}
+		return nil, nil, clipr.NewBadCommandError(scp, c.cs.cur)
 	}
 
 	return nextCmd, nextArgs, nil
@@ -179,12 +179,12 @@ func run(c *Command) (*Command, error) {
 	}
 
 	if c.cs.cur == "" {
-		return nil, &clipr.EmptyCommandError{scp}
+		return nil, clipr.NewEmptyCommandError(scp)
 	}
 
 	next, ok := c.cs.m[c.cs.cur]
 	if !ok {
-		return nil, &clipr.BadCommandError{scp, c.cs.cur}
+		return nil, clipr.NewBadCommandError(scp, c.cs.cur)
 	}
 
 	return next, nil

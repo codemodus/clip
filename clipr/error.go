@@ -7,13 +7,20 @@ import (
 )
 
 var (
+	// ErrCtrlNoArgs ...
 	ErrCtrlNoArgs = errors.New("no more args")
+	// ErrCtrlNoCmds ...
 	ErrCtrlNoCmds = errors.New("no more cmds")
 )
 
 // EmptyCommandError ...
 type EmptyCommandError struct {
 	Scp string
+}
+
+// NewEmptyCommandError ...
+func NewEmptyCommandError(scope string) *EmptyCommandError {
+	return &EmptyCommandError{scope}
 }
 
 func (e *EmptyCommandError) Error() string {
@@ -26,6 +33,11 @@ type FlagParseError struct {
 	Err error
 }
 
+// NewFlagParseError ...
+func NewFlagParseError(scope string, err error) *FlagParseError {
+	return &FlagParseError{scope, err}
+}
+
 func (e *FlagParseError) Error() string {
 	return fmt.Sprintf("%s: %s", e.Scp, e.Err.Error())
 }
@@ -36,10 +48,16 @@ type BadCommandError struct {
 	Cmd string
 }
 
+// NewBadCommandError ...
+func NewBadCommandError(scope, cmd string) *BadCommandError {
+	return &BadCommandError{scope, cmd}
+}
+
 func (e *BadCommandError) Error() string {
 	return fmt.Sprintf("%s: cannot find command: %s", e.Scp, e.Cmd)
 }
 
+// IsFlagHelpError ...
 func IsFlagHelpError(err error) bool {
 	if err == nil {
 		return false
@@ -52,6 +70,7 @@ func IsFlagHelpError(err error) bool {
 	return err == flag.ErrHelp
 }
 
+// IsControlError ...
 func IsControlError(err error) bool {
 	return err == ErrCtrlNoArgs || err == ErrCtrlNoCmds
 }
