@@ -3,10 +3,9 @@ package clip
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"os"
 
 	"github.com/codemodus/clip/clipr"
+	"github.com/codemodus/clip/clix"
 )
 
 var (
@@ -38,11 +37,8 @@ func New(program string, flags *flag.FlagSet, subcmds *CommandSet) *Clip {
 func (c *Clip) Parse(args []string) error {
 	next, nextArgs, err := parse(c, args)
 	if err != nil {
-		usg := func() {
-			Usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
-		}
-
-		return filteredError(usg, err)
+		err = clipr.FilterControlError(err)
+		return clix.Usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
 	}
 
 	return next.Parse(nextArgs)
@@ -52,7 +48,7 @@ func (c *Clip) Parse(args []string) error {
 func (c *Clip) Run() error {
 	next, err := run(c)
 	if err != nil {
-		return filteredError(nil, err)
+		return clipr.FilterControlError(err)
 	}
 
 	return next.Run()
@@ -97,22 +93,6 @@ func NewCommandSet(cmds ...*Command) *CommandSet {
 	}
 }
 
-func cmdsTable(cmds []*Command) map[string]*Command {
-	m := make(map[string]*Command)
-
-	if cmds == nil {
-		return m
-	}
-
-	for _, c := range cmds {
-		if c.fs != nil && c.fs.Name() != "" {
-			m[c.fs.Name()] = c
-		}
-	}
-
-	return m
-}
-
 func parse(c *Command, args []string) (*Command, []string, error) {
 	scp := "parse args"
 
@@ -127,7 +107,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 	nextArgs := args
 
 	if c.fs != nil {
-		if err := Parse(c.fs, args[1:]); err != nil {
+		if err := clix.Parse(c.fs, args[1:]); err != nil {
 			if clipr.IsFlagHelpError(err) {
 				c.no = true
 			}
@@ -190,34 +170,6 @@ func run(c *Command) (*Command, error) {
 	return next, nil
 }
 
-// Parse ...
-func Parse(fs *flag.FlagSet, args []string) error {
-	out := fs.Output()
-	fs.SetOutput(ioutil.Discard)
-	defer fs.SetOutput(out)
-
-	return fs.Parse(args)
-}
-
-// Usage ...
-func Usage(program string, fs *flag.FlagSet, extra string, err error) {
-	if clipr.IsFlagHelpError(err) && fs.Output() == os.Stderr {
-		out := fs.Output()
-		fs.SetOutput(os.Stdout)
-		defer fs.SetOutput(out)
-	}
-
-	if program != "" && program != fs.Name() {
-		fmt.Fprintf(fs.Output(), "%s:\n", program)
-	}
-
-	fs.Usage()
-
-	if extra != "" {
-		fmt.Fprintln(fs.Output(), extra)
-	}
-}
-
 func setPrograms(program string, subcmds *CommandSet) {
 	if subcmds == nil || subcmds.m == nil {
 		return
@@ -227,6 +179,22 @@ func setPrograms(program string, subcmds *CommandSet) {
 		subcmds.m[k].pg = program
 		setPrograms(program, subcmds.m[k].cs)
 	}
+}
+
+func cmdsTable(cmds []*Command) map[string]*Command {
+	m := make(map[string]*Command)
+
+	if cmds == nil {
+		return m
+	}
+
+	for _, c := range cmds {
+		if c.fs != nil && c.fs.Name() != "" {
+			m[c.fs.Name()] = c
+		}
+	}
+
+	return m
 }
 
 func subcmdsInfo(cs *CommandSet, sep string) string {
@@ -245,20 +213,4 @@ func subcmdsInfo(cs *CommandSet, sep string) string {
 	}
 
 	return fmt.Sprintf("Available commands - %s", s)
-}
-
-func filteredError(usage func(), err error) error {
-	if clipr.IsControlError(err) {
-		return nil
-	}
-
-	if usage != nil {
-		usage()
-	}
-
-	if clipr.IsFlagHelpError(err) {
-		return nil
-	}
-
-	return err
 }

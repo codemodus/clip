@@ -70,7 +70,15 @@ func IsFlagHelpError(err error) bool {
 	return err == flag.ErrHelp
 }
 
-// IsControlError ...
-func IsControlError(err error) bool {
+func isControlError(err error) bool {
 	return err == ErrCtrlNoArgs || err == ErrCtrlNoCmds
+}
+
+// FilterControlError ...
+func FilterControlError(err error) error {
+	if isControlError(err) {
+		return nil
+	}
+
+	return err
 }
