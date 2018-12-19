@@ -35,7 +35,7 @@ func (c *Clip) Parse(args []string) error {
 			usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
 		}
 
-		return asError(usg, err)
+		return filteredError(usg, err)
 	}
 
 	return next.Parse(nextArgs)
@@ -45,7 +45,7 @@ func (c *Clip) Parse(args []string) error {
 func (c *Clip) Run() error {
 	next, err := run(c)
 	if err != nil {
-		return asError(nil, err)
+		return filteredError(nil, err)
 	}
 
 	return next.Run()

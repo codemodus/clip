@@ -60,7 +60,7 @@ func isControlError(err error) bool {
 	return err == errCtrlNoArgs || err == errCtrlNoCmds
 }
 
-func asError(usage func(), err error) error {
+func filteredError(usage func(), err error) error {
 	if isControlError(err) {
 		return nil
 	}
