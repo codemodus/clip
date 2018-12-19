@@ -16,9 +16,7 @@ type Clip struct {
 
 // New ...
 func New(program string, flags *flag.FlagSet, subcmds *CommandSet) *Clip {
-	for k := range subcmds.m {
-		subcmds.m[k].pg = program
-	}
+	setPrograms(program, subcmds)
 
 	return &Clip{
 		pg: program,
@@ -182,4 +180,15 @@ func Parse(fs *flag.FlagSet, args []string) error {
 	defer fs.SetOutput(out)
 
 	return fs.Parse(args)
+}
+
+func setPrograms(program string, subcmds *CommandSet) {
+	if subcmds == nil || subcmds.m == nil {
+		return
+	}
+
+	for k := range subcmds.m {
+		subcmds.m[k].pg = program
+		setPrograms(program, subcmds.m[k].cs)
+	}
 }
