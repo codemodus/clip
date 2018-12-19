@@ -1,4 +1,4 @@
-package clix
+package clifs
 
 import (
 	"flag"
@@ -32,12 +32,14 @@ func Usage(program string, fs *flag.FlagSet, extra string, err error) error {
 		return nil
 	}
 
-	if IsFlagHelpError(err) && fs.Output() == os.Stderr {
-		out := fs.Output()
-		fs.SetOutput(os.Stdout)
-		defer fs.SetOutput(out)
-
+	if IsFlagHelpError(err) {
 		err = nil
+
+		if fs.Output() == os.Stderr {
+			out := fs.Output()
+			fs.SetOutput(os.Stdout)
+			defer fs.SetOutput(out)
+		}
 	}
 
 	if program != "" && program != fs.Name() {

@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/codemodus/clip/clifs"
 	"github.com/codemodus/clip/clipr"
-	"github.com/codemodus/clip/clix"
 )
 
 var (
@@ -38,7 +38,7 @@ func (c *Clip) Parse(args []string) error {
 	next, nextArgs, err := parse(c, args)
 	if err != nil {
 		err = clipr.FilterControlError(err)
-		return clix.Usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
+		return clifs.Usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
 	}
 
 	return next.Parse(nextArgs)
@@ -107,7 +107,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 	nextArgs := args
 
 	if c.fs != nil {
-		if err := clix.Parse(c.fs, args[1:]); err != nil {
+		if err := clifs.Parse(c.fs, args[1:]); err != nil {
 			if clipr.IsFlagHelpError(err) {
 				c.no = true
 			}
