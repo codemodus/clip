@@ -108,6 +108,10 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 	scp := "parse args"
 
 	if args == nil || len(args) <= 1 {
+		if c.fn == nil {
+			return nil, nil, &EmptyCommandError{scp}
+		}
+
 		return nil, nil, errCtrlNoArgs
 	}
 
