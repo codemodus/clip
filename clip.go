@@ -32,7 +32,7 @@ func (c *Clip) Parse(args []string) error {
 	next, nextArgs, err := parse(c, args)
 	if err != nil {
 		usg := func() {
-			usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
+			Usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
 		}
 
 		return filteredError(usg, err)
@@ -116,7 +116,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 	nextArgs := args
 
 	if c.fs != nil {
-		if err := siftedParse(c.fs, args[1:], c.cs); err != nil {
+		if err := Parse(c.fs, args[1:]); err != nil {
 			if isFlagHelpError(err) {
 				c.no = true
 			}
@@ -175,7 +175,8 @@ func run(c *Command) (*Command, error) {
 	return next, nil
 }
 
-func siftedParse(fs *flag.FlagSet, args []string, cs *CommandSet) error {
+// Parse ...
+func Parse(fs *flag.FlagSet, args []string) error {
 	out := fs.Output()
 	fs.SetOutput(ioutil.Discard)
 	defer fs.SetOutput(out)

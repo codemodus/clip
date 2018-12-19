@@ -94,18 +94,21 @@ func subcmdsInfo(cs *CommandSet, sep string) string {
 	return fmt.Sprintf("Available commands - %s", s)
 }
 
-func usage(program string, fs *flag.FlagSet, extra string, err error) {
-	out := fs.Output()
-
+// Usage ...
+func Usage(program string, fs *flag.FlagSet, extra string, err error) {
 	if isFlagHelpError(err) && fs.Output() == os.Stderr {
+		out := fs.Output()
 		fs.SetOutput(os.Stdout)
+		defer fs.SetOutput(out)
 	}
 
-	fmt.Fprintf(fs.Output(), "%s:\n", program)
+	if program != "" && program != fs.Name() {
+		fmt.Fprintf(fs.Output(), "%s:\n", program)
+	}
+
 	fs.Usage()
+
 	if extra != "" {
 		fmt.Fprintln(fs.Output(), extra)
 	}
-
-	fs.SetOutput(out)
 }
