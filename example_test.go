@@ -19,7 +19,7 @@ func Example() {
 		clip.NewCommand(printCnf.flagSet, runPrintFunc(printCnf, globalCnf), nil),
 		clip.NewCommand(otherCnf.flagSet, runOtherFunc(otherCnf), nil),
 	)
-	app := clip.New(globalCnf.flagSet, cs)
+	app := clip.New("myapp", globalCnf.flagSet, cs)
 
 	// emulate cli command 'myapp -v print -msg=hello, world'
 	os.Args = []string{"myapp", "-v", "print", "-msg=hello, world"}

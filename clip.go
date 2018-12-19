@@ -2,38 +2,50 @@ package clip
 
 import (
 	"flag"
+	"io/ioutil"
 )
 
 // Clip ...
 type Clip struct {
+	pg string
+	no bool
 	fs *flag.FlagSet
 	fn func() error
 	cs *CommandSet
 }
 
 // New ...
-func New(flags *flag.FlagSet, subCmds *CommandSet) *Clip {
+func New(program string, flags *flag.FlagSet, subcmds *CommandSet) *Clip {
+	for k := range subcmds.m {
+		subcmds.m[k].pg = program
+	}
+
 	return &Clip{
+		pg: program,
 		fs: flags,
-		cs: subCmds,
+		cs: subcmds,
 	}
 }
 
 // Parse ...
 func (c *Clip) Parse(args []string) error {
-	next, args, err := parse(c, args)
+	next, nextArgs, err := parse(c, args)
 	if err != nil {
-		return nilWarnOrError(err)
+		usg := func() {
+			usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
+		}
+
+		return asError(usg, err)
 	}
 
-	return next.Parse(args)
+	return next.Parse(nextArgs)
 }
 
 // Run ...
 func (c *Clip) Run() error {
 	next, err := run(c)
 	if err != nil {
-		return nilWarnOrError(err)
+		return asError(nil, err)
 	}
 
 	return next.Run()
@@ -46,20 +58,22 @@ type HandlerFunc func() error
 type Command = Clip
 
 // NewCommand ...
-func NewCommand(flags *flag.FlagSet, fn HandlerFunc, subCmds *CommandSet) *Command {
+func NewCommand(flags *flag.FlagSet, fn HandlerFunc, subcmds *CommandSet) *Command {
 	return &Command{
+		pg: "unknown program",
 		fs: flags,
 		fn: fn,
-		cs: subCmds,
+		cs: subcmds,
 	}
 }
 
 // NewCommandNamespace ...
-func NewCommandNamespace(name string, subCmds *CommandSet) *Command {
+func NewCommandNamespace(name string, subcmds *CommandSet) *Command {
 	return &Command{
+		pg: "unknown program namespace",
 		fs: flag.NewFlagSet(name, FlagErrorHandling),
 		fn: nil,
-		cs: subCmds,
+		cs: subcmds,
 	}
 }
 
@@ -93,63 +107,78 @@ func cmdsTable(cmds []*Command) map[string]*Command {
 }
 
 func parse(c *Command, args []string) (*Command, []string, error) {
+	scp := "parse args"
+
 	if args == nil || len(args) <= 1 {
-		return nil, nil, errWarnNoArgs
+		return nil, nil, errCtrlNoArgs
 	}
 
 	nextArgs := args
 
 	if c.fs != nil {
-		if err := c.fs.Parse(args[1:]); err != nil {
-			return nil, nil, ErrFlagParse
+		if err := siftedParse(c.fs, args[1:], c.cs); err != nil {
+			if isFlagHelpError(err) {
+				c.no = true
+			}
+			return nil, nil, &FlagParseError{scp, err}
 		}
 
 		nextArgs = c.fs.Args()
 		if len(nextArgs) == 0 {
-			return nil, nil, errWarnNoArgs
+			return nil, nil, errCtrlNoArgs
 		}
 
 		if c.cs == nil {
 			if len(nextArgs) == 1 {
-				return nil, nil, errWarnNoCmds
+				return nil, nil, errCtrlNoCmds
 			}
 
-			return nil, nil, ErrBadCommand
+			return nil, nil, &BadCommandError{scp, c.fs.Arg(0)}
 		}
 
 		c.cs.cur = c.fs.Arg(0)
 		if c.cs.cur == "" {
-			return nil, nil, ErrEmptyCommand
+			return nil, nil, &EmptyCommandError{scp}
 		}
 	}
 
 	nextCmd, ok := c.cs.m[c.cs.cur]
 	if !ok {
-		return nil, nil, ErrBadCommand
+		return nil, nil, &BadCommandError{scp, c.cs.cur}
 	}
 
 	return nextCmd, nextArgs, nil
 }
 
 func run(c *Command) (*Command, error) {
+	scp := "run command"
+
 	if c.fn != nil {
 		if err := c.fn(); err != nil {
 			return nil, err
 		}
 	}
 
-	if c.cs == nil || len(c.cs.m) == 0 {
-		return nil, errWarnNoCmds
+	if c.no || c.cs == nil || len(c.cs.m) == 0 {
+		return nil, errCtrlNoCmds
 	}
 
 	if c.cs.cur == "" {
-		return nil, ErrEmptyCommand
+		return nil, &EmptyCommandError{scp}
 	}
 
 	next, ok := c.cs.m[c.cs.cur]
 	if !ok {
-		return nil, ErrBadCommand
+		return nil, &BadCommandError{scp, c.cs.cur}
 	}
 
 	return next, nil
+}
+
+func siftedParse(fs *flag.FlagSet, args []string, cs *CommandSet) error {
+	out := fs.Output()
+	fs.SetOutput(ioutil.Discard)
+	defer fs.SetOutput(out)
+
+	return fs.Parse(args)
 }
