@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 
 	"github.com/codemodus/clip/clipr"
 )
@@ -16,6 +17,8 @@ var (
 
 // Parse ...
 func Parse(fs *flag.FlagSet, args []string) error {
+	args = shiftCollision(args, fs.Name(), os.Args[0], path.Base(os.Args[0]))
+
 	out := fs.Output()
 	fs.SetOutput(ioutil.Discard)
 	defer fs.SetOutput(out)
@@ -53,4 +56,15 @@ func Usage(program string, fs *flag.FlagSet, extra string, err error) error {
 // IsFlagHelpError ...
 func IsFlagHelpError(err error) bool {
 	return clipr.IsFlagHelpError(err)
+}
+
+func shiftCollision(args []string, ss ...string) []string {
+	for _, s := range ss {
+		if len(args) > 0 && args[0] == s {
+			args = args[1:]
+			break
+		}
+	}
+
+	return args
 }
