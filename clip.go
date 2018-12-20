@@ -16,7 +16,7 @@ var (
 // Clip ...
 type Clip struct {
 	pg string
-	no bool
+	fe bool
 	fs *flag.FlagSet
 	fn func() error
 	cs *CommandSet
@@ -37,11 +37,19 @@ func New(program string, flags *flag.FlagSet, subcmds *CommandSet) *Clip {
 func (c *Clip) Parse(args []string) error {
 	next, nextArgs, err := parse(c, args)
 	if err != nil {
-		err = clipr.FilterControlError(err)
-		return clifs.Usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
+		if err = clipr.FilterControlError(err); err != nil {
+			err = clipr.NewUsageError(err, c.Usage)
+		}
+
+		return err
 	}
 
 	return next.Parse(nextArgs)
+}
+
+// Usage ...
+func (c *Clip) Usage(depth int, err error) error {
+	return clifs.Usage(c.pg, c.fs, subcmdsInfo(c.cs, ", "), err)
 }
 
 // Run ...
@@ -93,6 +101,19 @@ func NewCommandSet(cmds ...*Command) *CommandSet {
 	}
 }
 
+// IsUsageError ...
+func IsUsageError(err error) (UsageError, bool) {
+	uerr, ok := err.(UsageError)
+	return uerr, ok
+}
+
+// UsageError ...
+type UsageError interface {
+	error
+	Err() error
+	Usage(depth int) error
+}
+
 func parse(c *Command, args []string) (*Command, []string, error) {
 	scp := "parse args"
 
@@ -109,7 +130,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 	if c.fs != nil {
 		if err := clifs.Parse(c.fs, args[1:]); err != nil {
 			if clipr.IsFlagHelpError(err) {
-				c.no = true
+				c.fe = true
 			}
 			return nil, nil, clipr.NewFlagParseError(scp, err)
 		}
@@ -144,7 +165,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 func run(c *Command) (*Command, error) {
 	scp := "run command"
 
-	if c.no {
+	if c.fe {
 		return nil, clipr.ErrCtrlNoCmds
 	}
 

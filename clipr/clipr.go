@@ -82,3 +82,29 @@ func FilterControlError(err error) error {
 
 	return err
 }
+
+// UsageError ...
+type UsageError struct {
+	err   error
+	usage func(int, error) error
+}
+
+// NewUsageError ...
+func NewUsageError(err error, usageFunc func(int, error) error) *UsageError {
+	return &UsageError{err, usageFunc}
+}
+
+// Error ...
+func (e *UsageError) Error() string {
+	return e.err.Error()
+}
+
+// Err ...
+func (e *UsageError) Err() error {
+	return e.err
+}
+
+// Usage ...
+func (e *UsageError) Usage(depth int) error {
+	return e.usage(depth, e.err)
+}
