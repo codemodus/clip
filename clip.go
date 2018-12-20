@@ -49,6 +49,24 @@ func (c *Clip) Parse(args []string) error {
 	return next.Parse(nextArgs)
 }
 
+// NoisyParse ...
+func (c *Clip) NoisyParse(args []string) error {
+	if err := c.Parse(args); err != nil {
+		if uerr, ok := AsUsageError(err); ok {
+			depth := 1
+			if uerr.IsHelp() {
+				depth = 0
+			}
+
+			err = uerr.Usage(depth)
+		}
+
+		return err
+	}
+
+	return nil
+}
+
 // Usage ...
 func (c *Clip) Usage(depth int, err error) error {
 	return usage(c, 0, depth, err)
