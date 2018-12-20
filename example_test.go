@@ -25,15 +25,11 @@ func Example() {
 	os.Args = []string{"myapp", "-v", "print", "-msg=hello, world"}
 
 	if err := app.Parse(os.Args); err != nil {
-		if uerr, ok := clip.AsUsageError(err); ok {
-			err = uerr.Usage(1)
-		}
-
-		handleErr(err)
+		handleError(app.UsageLong(err)) // return? print? exit?
 	}
 
 	if err := app.Run(); err != nil {
-		handleErr(err)
+		handleError(err) // return? print? exit?
 	}
 
 	// Output:
@@ -129,4 +125,4 @@ func runOtherFunc(cnf *otherConf) func() error {
 	}
 }
 
-func handleErr(err error) {}
+func handleError(err error) {}
