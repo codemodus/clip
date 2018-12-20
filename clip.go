@@ -37,7 +37,7 @@ func New(program string, flags *flag.FlagSet, subcmds *CommandSet) *Clip {
 func (c *Clip) Parse(args []string) error {
 	next, nextArgs, err := parse(c, args)
 	if err != nil {
-		if err = clipr.FilterControlError(err); err != nil {
+		if err = clipr.FilterControl(err); err != nil {
 			err = clipr.NewUsageError(err, c.Usage)
 		}
 
@@ -56,7 +56,7 @@ func (c *Clip) Usage(depth int, err error) error {
 func (c *Clip) Run() error {
 	next, err := run(c)
 	if err != nil {
-		return clipr.FilterControlError(err)
+		return clipr.FilterControl(err)
 	}
 
 	return next.Run()
@@ -101,8 +101,8 @@ func NewCommandSet(cmds ...*Command) *CommandSet {
 	}
 }
 
-// IsUsageError ...
-func IsUsageError(err error) (UsageError, bool) {
+// AsUsageError ...
+func AsUsageError(err error) (UsageError, bool) {
 	uerr, ok := err.(UsageError)
 	return uerr, ok
 }
@@ -129,7 +129,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 
 	if c.fs != nil {
 		if err := clifs.Parse(c.fs, args[1:]); err != nil {
-			if clipr.IsFlagHelpError(err) {
+			if clipr.IsFlagHelp(err) {
 				c.fe = true
 			}
 			return nil, nil, clipr.NewFlagParseError(scp, err)

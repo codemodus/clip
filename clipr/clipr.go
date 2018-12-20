@@ -57,8 +57,8 @@ func (e *BadCommandError) Error() string {
 	return fmt.Sprintf("%s: cannot find command: %s", e.Scp, e.Cmd)
 }
 
-// IsFlagHelpError ...
-func IsFlagHelpError(err error) bool {
+// IsFlagHelp ...
+func IsFlagHelp(err error) bool {
 	if err == nil {
 		return false
 	}
@@ -70,13 +70,13 @@ func IsFlagHelpError(err error) bool {
 	return err == flag.ErrHelp
 }
 
-func isControlError(err error) bool {
+func isControl(err error) bool {
 	return err == ErrCtrlNoArgs || err == ErrCtrlNoCmds
 }
 
-// FilterControlError ...
-func FilterControlError(err error) error {
-	if isControlError(err) {
+// FilterControl ...
+func FilterControl(err error) error {
+	if isControl(err) {
 		return nil
 	}
 

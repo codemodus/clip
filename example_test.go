@@ -25,7 +25,7 @@ func Example() {
 	os.Args = []string{"myapp", "-v", "print", "-msg=hello, world"}
 
 	if err := app.Parse(os.Args); err != nil {
-		if uerr, ok := clip.IsUsageError(err); ok {
+		if uerr, ok := clip.AsUsageError(err); ok {
 			err = uerr.Usage(1)
 		}
 

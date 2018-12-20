@@ -32,7 +32,7 @@ func Usage(program string, fs *flag.FlagSet, extra string, err error) error {
 		return nil
 	}
 
-	if IsFlagHelpError(err) {
+	if clipr.IsFlagHelp(err) {
 		err = nil
 
 		if fs.Output() == os.Stderr {
@@ -53,11 +53,6 @@ func Usage(program string, fs *flag.FlagSet, extra string, err error) error {
 	}
 
 	return err
-}
-
-// IsFlagHelpError ...
-func IsFlagHelpError(err error) bool {
-	return clipr.IsFlagHelpError(err)
 }
 
 func shiftCollision(args []string, ss ...string) []string {
