@@ -63,7 +63,11 @@ func IsFlagHelp(err error) bool {
 		return false
 	}
 
-	if e, ok := err.(*FlagParseError); ok && e.Err == flag.ErrHelp {
+	if ue, ok := err.(*UsageError); ok {
+		err = ue.Err()
+	}
+
+	if fpe, ok := err.(*FlagParseError); ok && fpe.Err == flag.ErrHelp {
 		return true
 	}
 
