@@ -91,11 +91,12 @@ func FilterControl(err error) error {
 type UsageError struct {
 	err   error
 	usage func(int, error) error
+	top   bool
 }
 
 // NewUsageError ...
-func NewUsageError(err error, usageFunc func(int, error) error) *UsageError {
-	return &UsageError{err, usageFunc}
+func NewUsageError(err error, usageFunc func(int, error) error, top bool) *UsageError {
+	return &UsageError{err, usageFunc, top}
 }
 
 // Error ...
@@ -111,4 +112,14 @@ func (e *UsageError) Err() error {
 // Usage ...
 func (e *UsageError) Usage(depth int) error {
 	return e.usage(depth, e.err)
+}
+
+// IsHelp ...
+func (e *UsageError) IsHelp() bool {
+	return IsFlagHelp(e.err)
+}
+
+// IsTop ...
+func (e *UsageError) IsTop() bool {
+	return e.top
 }
