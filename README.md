@@ -44,7 +44,7 @@ cs := clip.NewCommandSet(
 )
 app := clip.New("myapp", globalCnf.flagSet, cs)
 
-// emulate cli command 'myapp -v print -msg=hello, world'
+// emulate cli command 'myapp -v print -msg="hello, world"'
 os.Args = []string{"myapp", "-v", "print", "-msg=hello, world"}
 
 if err := app.Parse(os.Args); err != nil {
