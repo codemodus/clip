@@ -1,16 +1,12 @@
+// Package clip provides simple subcommand structuring with a minimum of
+// dependencies.
 package clip
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/codemodus/clip/clipr"
 	"github.com/codemodus/clip/internal/clifsx"
-)
-
-var (
-	// FlagErrorHandling ...
-	FlagErrorHandling = flag.ContinueOnError
 )
 
 // Clip ...
@@ -18,13 +14,13 @@ type Clip struct {
 	pg string
 	fe bool
 	tp bool
-	fs *flag.FlagSet
+	fs *FlagSet
 	fn func() error
 	cs *CommandSet
 }
 
 // New ...
-func New(program string, flags *flag.FlagSet, subcmds *CommandSet) *Clip {
+func New(program string, flags *FlagSet, subcmds *CommandSet) *Clip {
 	setPrograms(program, subcmds)
 
 	return &Clip{
@@ -85,7 +81,7 @@ type HandlerFunc func() error
 type Command = Clip
 
 // NewCommand ...
-func NewCommand(flags *flag.FlagSet, fn HandlerFunc, subcmds *CommandSet) *Command {
+func NewCommand(flags *FlagSet, fn HandlerFunc, subcmds *CommandSet) *Command {
 	return &Command{
 		pg: "unknown program",
 		fs: flags,
@@ -98,7 +94,7 @@ func NewCommand(flags *flag.FlagSet, fn HandlerFunc, subcmds *CommandSet) *Comma
 func NewCommandNamespace(name string, subcmds *CommandSet) *Command {
 	return &Command{
 		pg: "unknown program namespace",
-		fs: flag.NewFlagSet(name, FlagErrorHandling),
+		fs: NewFlagSet(name),
 		fn: nil,
 		cs: subcmds,
 	}
@@ -184,7 +180,7 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 	return nextCmd, nextArgs, nil
 }
 
-func usage(c *Clip, depthGone, depthToGo int, err error) error {
+func usage(c *Command, depthGone, depthToGo int, err error) error {
 	pg := c.pg
 	if depthGone > 0 {
 		pg = ""

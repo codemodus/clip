@@ -1,7 +1,6 @@
 package clip_test
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
@@ -62,13 +61,13 @@ func ExampleHandlerFunc() {
 }
 
 type globalConf struct {
-	flagSet *flag.FlagSet
+	flagSet *clip.FlagSet
 	verbose bool
 }
 
 func newGlobalConf() *globalConf {
 	c := globalConf{
-		flagSet: flag.NewFlagSet("global", clip.FlagErrorHandling),
+		flagSet: clip.NewFlagSet("global"),
 	}
 
 	c.flagSet.BoolVar(&c.verbose, "v", c.verbose, "enable verbosity")
@@ -77,13 +76,13 @@ func newGlobalConf() *globalConf {
 }
 
 type printConf struct {
-	flagSet *flag.FlagSet
+	flagSet *clip.FlagSet
 	msg     string
 }
 
 func newPrintConf(name string) *printConf {
 	c := printConf{
-		flagSet: flag.NewFlagSet(name, clip.FlagErrorHandling),
+		flagSet: clip.NewFlagSet(name),
 		msg:     "default message",
 	}
 
@@ -93,13 +92,13 @@ func newPrintConf(name string) *printConf {
 }
 
 type otherConf struct {
-	flagSet *flag.FlagSet
+	flagSet *clip.FlagSet
 	file    string
 }
 
 func newOtherConf(name string) *otherConf {
 	c := otherConf{
-		flagSet: flag.NewFlagSet(name, clip.FlagErrorHandling),
+		flagSet: clip.NewFlagSet(name),
 		file:    "test_data",
 	}
 

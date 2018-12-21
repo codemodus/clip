@@ -13,8 +13,18 @@ import (
 	"github.com/codemodus/clip/clipr"
 )
 
+// FlagSet ...
+type FlagSet struct {
+	*flag.FlagSet
+}
+
+// NewFlagSet ...
+func NewFlagSet(name string) *FlagSet {
+	return &FlagSet{flag.NewFlagSet(name, flag.ContinueOnError)}
+}
+
 // Parse ...
-func Parse(fs *flag.FlagSet, args []string) error {
+func Parse(fs *FlagSet, args []string) error {
 	args = shiftCollision(args, fs.Name(), os.Args[0], path.Base(os.Args[0]))
 
 	out := fs.Output()
@@ -25,7 +35,7 @@ func Parse(fs *flag.FlagSet, args []string) error {
 }
 
 // Usage ...
-func Usage(program string, depth int, fs *flag.FlagSet, extra string, err error) error {
+func Usage(program string, depth int, fs *FlagSet, extra string, err error) error {
 	if err == nil {
 		return nil
 	}

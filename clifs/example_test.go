@@ -1,7 +1,6 @@
 package clifs_test
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"path"
@@ -29,7 +28,7 @@ func run() error {
 		example string
 	)
 
-	fs := flag.NewFlagSet("global", clifs.FlagErrorHandling)
+	fs := clifs.NewFlagSet("global")
 	fs.BoolVar(&verbose, "v", verbose, "verbosity")
 	fs.StringVar(&example, "example", example, "example")
 
