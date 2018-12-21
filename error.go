@@ -2,7 +2,7 @@ package clip
 
 import "github.com/codemodus/clip/clipr"
 
-// UsageError ...
+// UsageError manages parse error related contextual information.
 type UsageError interface {
 	error
 	Err() error
@@ -11,7 +11,8 @@ type UsageError interface {
 	IsTop() bool
 }
 
-// AsUsageError ...
+// AsUsageError is a convenience function for asserting that an error is a
+// UsageError.
 func AsUsageError(err error) (UsageError, bool) {
 	uerr, ok := err.(UsageError)
 	return uerr, ok

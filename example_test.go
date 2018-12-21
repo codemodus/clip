@@ -24,7 +24,7 @@ func Example() {
 	os.Args = []string{"myapp", "-v", "print", "-msg=hello, world"}
 
 	if err := app.Parse(os.Args); err != nil {
-		handleError(app.UsageLong(err)) // return? print? exit?
+		handleError(app.UsageLongHelp(err)) // return? print? exit?
 	}
 
 	if err := app.Run(); err != nil {
