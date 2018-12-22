@@ -263,12 +263,8 @@ func setPrograms(program string, cs *CommandSet) {
 func cmdsTable(cmds []*Command) map[string]*Command {
 	m := make(map[string]*Command)
 
-	if isEmptyCmds(cmds) {
-		return m
-	}
-
 	for _, c := range cmds {
-		if isNamedFlagSet(c.fs) {
+		if c.fs.Name() != "" {
 			m[c.fs.Name()] = c
 		}
 	}
@@ -299,17 +295,5 @@ func isEmptyArgs(args []string) bool {
 }
 
 func isEmptyCommandSet(cs *CommandSet) bool {
-	return cs == nil || isEmptyCmdsTable(cs.m)
-}
-
-func isEmptyCmds(cmds []*Command) bool {
-	return cmds == nil || len(cmds) == 0
-}
-
-func isNamedFlagSet(fs *FlagSet) bool {
-	return fs != nil && fs.Name() != ""
-}
-
-func isEmptyCmdsTable(m map[string]*Command) bool {
-	return m == nil || len(m) == 0
+	return cs == nil || cs.m == nil || len(cs.m) == 0
 }
