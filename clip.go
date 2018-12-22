@@ -6,7 +6,7 @@
 package clip
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/codemodus/clip/clipr"
 	"github.com/codemodus/clip/internal/clifsx"
@@ -16,22 +16,26 @@ import (
 // and/or subcommands. If a command does not have a related function and does
 // have subcommands, it can be understood to be a command namespace.
 type Clip struct {
-	pg string
-	fe bool
-	tp bool
+	pg string // program
+	hf bool   // flag help
+	tl bool   // top level
 	fs *FlagSet
-	fn func() error
+	fn func() error // command func
 	cs *CommandSet
 }
 
 // New constructs a pointer to an instance of Clip.
-func New(program string, flags *FlagSet, subcmds *CommandSet) *Clip {
+func New(program string, fs *FlagSet, subcmds *CommandSet) *Clip {
+	if fs == nil {
+		fs = NewFlagSet(program)
+	}
+
 	setPrograms(program, subcmds)
 
 	return &Clip{
 		pg: program,
-		tp: true,
-		fs: flags,
+		tl: true,
+		fs: fs,
 		cs: subcmds,
 	}
 }
@@ -41,7 +45,7 @@ func (c *Clip) Parse(args []string) error {
 	next, nextArgs, err := parse(c, args)
 	if err != nil {
 		if err = clipr.FilterControl(err); err != nil {
-			err = clipr.NewUsageError(err, c.Usage, c.tp)
+			err = clipr.NewUsageError(err, c.Usage, c.tl)
 		}
 
 		return err
@@ -92,10 +96,16 @@ type HandlerFunc func() error
 type Command = Clip
 
 // NewCommand constructs a pointer to an instance of Command.
-func NewCommand(flags *FlagSet, fn HandlerFunc, subcmds *CommandSet) *Command {
+func NewCommand(fs *FlagSet, fn HandlerFunc, subcmds *CommandSet) *Command {
+	program := "unknown program"
+
+	if fs == nil {
+		fs = NewFlagSet(program)
+	}
+
 	return &Command{
-		pg: "unknown program",
-		fs: flags,
+		pg: program,
+		fs: fs,
 		fn: fn,
 		cs: subcmds,
 	}
@@ -104,12 +114,7 @@ func NewCommand(flags *FlagSet, fn HandlerFunc, subcmds *CommandSet) *Command {
 // NewCommandNamespace constructs a pointer to an instance of Command that is
 // not intended to have a function associated with it.
 func NewCommandNamespace(name string, subcmds *CommandSet) *Command {
-	return &Command{
-		pg: "unknown program namespace",
-		fs: NewFlagSet(name),
-		fn: nil,
-		cs: subcmds,
-	}
+	return NewCommand(NewFlagSet(name), nil, subcmds)
 }
 
 // CommandSet manages a currently scheduled command and available commands.
@@ -129,41 +134,40 @@ func NewCommandSet(cmds ...*Command) *CommandSet {
 func parse(c *Command, args []string) (*Command, []string, error) {
 	scp := "parse args"
 
-	if args == nil || len(args) <= 1 {
+	if isEmptyArgs(args) || len(args) == 1 {
 		if c.fn == nil {
-			return nil, nil, clipr.NewEmptyCommandError(scp)
+			return nil, nil, clipr.NewNoBehaviorError(scp)
 		}
 
 		return nil, nil, clipr.ErrCtrlNoArgs
 	}
 
-	nextArgs := args
+	if err := clifsx.Parse(c.fs, args[1:]); err != nil {
+		c.hf = clipr.IsFlagHelp(err)
+		return nil, nil, clipr.NewFlagParseError(scp, err)
+	}
 
-	if c.fs != nil {
-		if err := clifsx.Parse(c.fs, args[1:]); err != nil {
-			if clipr.IsFlagHelp(err) {
-				c.fe = true
-			}
-			return nil, nil, clipr.NewFlagParseError(scp, err)
+	return nextToParse(scp, c)
+}
+
+// nextToParse returns the next requested *Command.
+func nextToParse(scp string, c *Command) (*Command, []string, error) {
+	nextArgs := c.fs.Args()
+	if isEmptyArgs(nextArgs) {
+		return nil, nil, clipr.ErrCtrlNoArgs
+	}
+
+	if c.cs == nil {
+		if len(nextArgs) == 1 {
+			return nil, nil, clipr.ErrCtrlNoCmds
 		}
 
-		nextArgs = c.fs.Args()
-		if len(nextArgs) == 0 {
-			return nil, nil, clipr.ErrCtrlNoArgs
-		}
+		return nil, nil, clipr.NewBadCommandError(scp, c.fs.Arg(0))
+	}
 
-		if c.cs == nil {
-			if len(nextArgs) == 1 {
-				return nil, nil, clipr.ErrCtrlNoCmds
-			}
-
-			return nil, nil, clipr.NewBadCommandError(scp, c.fs.Arg(0))
-		}
-
-		c.cs.cur = c.fs.Arg(0)
-		if c.cs.cur == "" {
-			return nil, nil, clipr.NewEmptyCommandError(scp)
-		}
+	c.cs.cur = c.fs.Arg(0)
+	if c.cs.cur == "" {
+		return nil, nil, clipr.NewEmptyCommandError(scp)
 	}
 
 	nextCmd, ok := c.cs.m[c.cs.cur]
@@ -182,7 +186,8 @@ func usage(c *Command, depthGone, depthToGo int, err error) error {
 		pg = ""
 	}
 
-	rerr := clifsx.Usage(pg, depthGone, c.fs, subcmdsInfo(c.cs, ", "), err)
+	cmdsInfo := commandSetInfo(c.cs, ", ", "Available commands - ")
+	rerr := clifsx.Usage(pg, depthGone, c.fs, cmdsInfo, err)
 
 	if depthToGo == 1 || c.cs == nil {
 		return rerr
@@ -200,8 +205,8 @@ func usage(c *Command, depthGone, depthToGo int, err error) error {
 func run(c *Command) (*Command, error) {
 	scp := "run command"
 
-	if c.fe {
-		return nil, clipr.ErrCtrlNoCmds
+	if c.hf {
+		return nil, clipr.ErrHelp
 	}
 
 	if c.fn != nil {
@@ -210,7 +215,7 @@ func run(c *Command) (*Command, error) {
 		}
 	}
 
-	if c.cs == nil || len(c.cs.m) == 0 {
+	if isEmptyCommandSet(c.cs) {
 		return nil, clipr.ErrCtrlNoCmds
 	}
 
@@ -228,14 +233,14 @@ func run(c *Command) (*Command, error) {
 
 // setPrograms recursively ensures all commands in a *CommandSet have the same
 // program set.
-func setPrograms(program string, subcmds *CommandSet) {
-	if subcmds == nil || subcmds.m == nil {
+func setPrograms(program string, cs *CommandSet) {
+	if isEmptyCommandSet(cs) {
 		return
 	}
 
-	for k := range subcmds.m {
-		subcmds.m[k].pg = program
-		setPrograms(program, subcmds.m[k].cs)
+	for k := range cs.m {
+		cs.m[k].pg = program
+		setPrograms(program, cs.m[k].cs)
 	}
 }
 
@@ -243,12 +248,12 @@ func setPrograms(program string, subcmds *CommandSet) {
 func cmdsTable(cmds []*Command) map[string]*Command {
 	m := make(map[string]*Command)
 
-	if cmds == nil {
+	if isEmptyCmds(cmds) {
 		return m
 	}
 
 	for _, c := range cmds {
-		if c.fs != nil && c.fs.Name() != "" {
+		if isNamedFlagSet(c.fs) {
 			m[c.fs.Name()] = c
 		}
 	}
@@ -256,21 +261,40 @@ func cmdsTable(cmds []*Command) map[string]*Command {
 	return m
 }
 
-// subcmdsInfo formats one level of commands within a *CommandSet.
-func subcmdsInfo(cs *CommandSet, sep string) string {
-	var s string
-
-	if cs == nil || len(cs.m) == 0 {
-		return s
+// commandSetInfo formats one level of commands within a *CommandSet.
+func commandSetInfo(cs *CommandSet, sep string, prefix string) string {
+	if isEmptyCommandSet(cs) {
+		return ""
 	}
 
+	var b strings.Builder
+	_, _ = b.WriteString(prefix) //nolint
+
+	var sp string
 	for k := range cs.m {
-		s += k + sep
+		_, _ = b.WriteString(sp + k) //nolint
+		sp = sep
 	}
 
-	if len(s) > len(sep)-1 {
-		s = s[:len(s)-len(sep)]
-	}
+	return b.String()
+}
 
-	return fmt.Sprintf("Available commands - %s", s)
+func isEmptyArgs(args []string) bool {
+	return args == nil || len(args) == 0
+}
+
+func isEmptyCommandSet(cs *CommandSet) bool {
+	return cs == nil || isEmptyCmdsTable(cs.m)
+}
+
+func isEmptyCmds(cmds []*Command) bool {
+	return cmds == nil || len(cmds) == 0
+}
+
+func isNamedFlagSet(fs *FlagSet) bool {
+	return fs != nil && fs.Name() != ""
+}
+
+func isEmptyCmdsTable(m map[string]*Command) bool {
+	return m == nil || len(m) == 0
 }

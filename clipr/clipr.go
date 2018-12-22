@@ -8,12 +8,30 @@ import (
 	"fmt"
 )
 
+type ctrlError error
+
 var (
 	// ErrCtrlNoArgs is a token signifying a control error due to lack of args.
-	ErrCtrlNoArgs = errors.New("no more args")
+	ErrCtrlNoArgs ctrlError = errors.New("no more args")
 	// ErrCtrlNoCmds is a token signifying a control error due to lack of cmds.
-	ErrCtrlNoCmds = errors.New("no more cmds")
+	ErrCtrlNoCmds ctrlError = errors.New("no more cmds")
+	// ErrHelp is a token signifying an error due to help request.
+	ErrHelp = errors.New("help requested")
 )
+
+// NoBehaviorError manages no behavior error info.
+type NoBehaviorError struct {
+	Scp string
+}
+
+// NewNoBehaviorError constructs a pointer to an instance of NoBehaviorError.
+func NewNoBehaviorError(scope string) *NoBehaviorError {
+	return &NoBehaviorError{scope}
+}
+
+func (e *NoBehaviorError) Error() string {
+	return fmt.Sprintf("%s: command has no defined behavior", e.Scp)
+}
 
 // EmptyCommandError manages empty command error info.
 type EmptyCommandError struct {
@@ -75,7 +93,7 @@ func IsFlagHelp(err error) bool {
 		return true
 	}
 
-	return err == flag.ErrHelp
+	return err == flag.ErrHelp || err == ErrHelp
 }
 
 func isControl(err error) bool {
