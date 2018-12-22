@@ -147,35 +147,50 @@ func parse(c *Command, args []string) (*Command, []string, error) {
 		return nil, nil, clipr.NewFlagParseError(scp, err)
 	}
 
-	return nextToParse(scp, c)
+	nextArgs, err := nextArguments(scp, c)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	nextCmd, err := nextCommand(scp, c)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return nextCmd, nextArgs, nil
 }
 
-// nextToParse returns the next requested *Command.
-func nextToParse(scp string, c *Command) (*Command, []string, error) {
+// nextArguments returns the next arguments.
+func nextArguments(scp string, c *Command) ([]string, error) {
 	nextArgs := c.fs.Args()
 	if isEmptyArgs(nextArgs) {
-		return nil, nil, clipr.ErrCtrlNoArgs
+		return nil, clipr.ErrCtrlNoArgs
 	}
 
 	if c.cs == nil {
 		if len(nextArgs) == 1 {
-			return nil, nil, clipr.ErrCtrlNoCmds
+			return nil, clipr.ErrCtrlNoCmds
 		}
 
-		return nil, nil, clipr.NewBadCommandError(scp, c.fs.Arg(0))
+		return nil, clipr.NewBadCommandError(scp, c.fs.Arg(0))
 	}
 
+	return nextArgs, nil
+}
+
+// nextCommand returns the next requested *Command.
+func nextCommand(scp string, c *Command) (*Command, error) {
 	c.cs.cur = c.fs.Arg(0)
 	if c.cs.cur == "" {
-		return nil, nil, clipr.NewEmptyCommandError(scp)
+		return nil, clipr.NewEmptyCommandError(scp)
 	}
 
 	nextCmd, ok := c.cs.m[c.cs.cur]
 	if !ok {
-		return nil, nil, clipr.NewBadCommandError(scp, c.cs.cur)
+		return nil, clipr.NewBadCommandError(scp, c.cs.cur)
 	}
 
-	return nextCmd, nextArgs, nil
+	return nextCmd, nil
 }
 
 // usage recursively calls a command's FlagSet usages limited by depthToGo
